@@ -1,0 +1,8 @@
+from centos_jdk8:1.0.0
+
+COPY . /opt
+WORKDIR /opt/log
+
+USER root
+EXPOSE 9000
+ENTRYPOINT  /bin/sh -C '/opt/startup.sh'

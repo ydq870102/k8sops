@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-env
+data:
+  storage-retention: 360d
+  storage-memory-chunks: '1048576'

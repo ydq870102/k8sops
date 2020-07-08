@@ -1,0 +1,53 @@
+apiVersion: v1
+data:
+  sys.ini: >-
+    #手写笔迹识别配置文件
+
+    #服务请求接收端口
+
+    service.port=15001
+
+    #处理请求线程池核心线程数
+
+    thread.pool.core.size=30
+
+    #处理请求线程池最大线程数
+
+    thread.pool.max.size=50
+
+    #笔迹识别成功结果阈值，范围0.0 ~ 1.0的float型
+
+    threshold.succuss.val=0.7
+
+    #返回值类型 1.对比相似度值（float） 2.是否识别通过（boolean）
+
+    return.type=1
+
+    #手写识别组件日志存放目录
+
+    log.path=/opt/log/
+
+    #手写识别组件日志级别（logLevel =1（默认），记录info、error、fatal信息；logLevel
+    =2，记录error、fatal信息）
+
+    log.level=1
+
+    #手写笔迹组件服务地址
+
+    component.address=mip-cfca-deepocr-svc:9000
+
+    #手写笔迹识别控件超时时间(毫秒)
+
+    socket.timeout=0
+
+    #处理线程等待队列大小
+
+    wait.queue.size=25
+kind: ConfigMap
+metadata:
+  creationTimestamp: '2020-04-15T08:00:32Z'
+  name: mip-recognize-server-config
+  namespace: mip-system
+  resourceVersion: '840061253'
+  selfLink: /api/v1/namespaces/mip-system/configmaps/mip-recognize-server-config
+  uid: 2e533be3-7eef-11ea-aba3-9698111c9a36

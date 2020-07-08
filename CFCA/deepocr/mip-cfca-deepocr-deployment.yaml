@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mip-cfca-deepocr-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      tier: backend
+      module: cfca
+  template:
+    metadata:
+      labels:
+        tier: backend
+        module: cfca
+    spec:
+      imagePullSecrets:
+      - name: mip-registry-secret
+      nodeSelector:
+        app: "mip"
+        subtype: "cfca"
+      tolerations:
+      - key: node-type
+        operator: Equal
+        value: mip
+        effect: NoSchedule
+      containers:
+      - image: registry.haid.com.cn/mip/mip-deepocr:1.0.0
+        name: mip-deepocr
+        imagePullPolicy: Always
+        command: ["/bin/bash","-c","/etc/rc.d/rc.local; /home/tensorflow_model_server  --port=9000 --enable_batching=true --batching_parameters_file=/home/batching_parameters.txt  --model_name=deepocr --model_base_path=/home/model"]
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        ports:
+        - name: http
+          containerPort: 9000
+        resources:
+          requests:
+            cpu: 200m
+            memory: 500Mi
+          limits:
+            cpu: 2
+            memory: 4000Mi
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

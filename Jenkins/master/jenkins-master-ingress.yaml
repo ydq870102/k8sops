@@ -1,0 +1,20 @@
+apiVersion: "extensions/v1beta1"
+kind: "Ingress"
+metadata:
+  labels:
+    app: "jenkins-master"
+  namespace: "common-system"
+  name: "jenkins-master-ingress"
+spec:
+  rules:
+    - host: "mipjenkins.haid.com.cn"
+      http:
+        paths:
+        - backend:
+            serviceName: "jenkins-master-service"
+            servicePort: 80
+          path: "/"
+  tls:
+    - hosts:
+        - mipjenkins.haid.com.cn
+      secretName: tls-haid.com.cn

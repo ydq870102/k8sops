@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "jenkins-master-deployment"
+  labels:
+    app: jenkins-master
+  namespace: "common-system"
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: "jenkins-master"
+  template:
+    metadata:
+      labels:
+        app: jenkins-master
+    spec:
+      nodeSelector:
+        app: common
+      imagePullSecrets:
+      - name: mip-registry-secret
+      serviceAccount: jenkins
+      containers:
+        - name: "jenkins-master"
+          image: "registry.haid.com.cn/mip/jenkins-master:v1.0"
+          imagePullPolicy: "IfNotPresent"
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          env:
+            - name: JAVA_OPTS
+              value: -Djenkins.install.runSetupWizard=false
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: jnlp-port
+              containerPort: 50000
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: "/var/jenkins_home"
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: "jenkins-pvc"
+            readOnly: false
