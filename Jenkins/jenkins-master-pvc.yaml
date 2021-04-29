@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+  namespace: common-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi
+  selector:
+    matchLabels:
+      alicloud-pvname: jenkins-pv
+  storageClassName: nas
+  volumeMode: Filesystem
+  volumeName: jenkins-pv

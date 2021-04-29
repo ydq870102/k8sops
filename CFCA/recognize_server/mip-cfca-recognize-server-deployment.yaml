@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mip-cfca-recognize-server-deployment
+  namespace: mip-system
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      module: cfca-recognize-server
+      tier: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        module: cfca-recognize-server
+        tier: backend
+    spec:
+      containers:
+        - image: 'registry.haid.com.cn/mip/mip-recognizeserver:1.0.4'
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            successThreshold: 1
+            tcpSocket:
+              port: 15001
+            timeoutSeconds: 1
+          name: mip-mip-recognize-server
+          ports:
+            - containerPort: 15001
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 15001
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: '2'
+              memory: 4000Mi
+            requests:
+              cpu: 200m
+              memory: 500Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /opt/config/sys.ini
+              name: config-volume
+              subPath: sys.ini
+            - mountPath: /opt/log
+              name: volume-log
+            - mountPath: /tmp/DeepOCRLog
+              name: volume-log
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: mip-registry-secret
+      nodeSelector:
+        app: mip
+        subtype: cfca
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoSchedule
+          key: node-type
+          operator: Equal
+          value: mip
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: mip-recognize-server-config
+          name: config-volume
+        - name: volume-log
+          persistentVolumeClaim:
+            claimName: mip-log-pvc
+status:
+  availableReplicas: 2
+  conditions:
+    - lastTransitionTime: '2020-04-16T07:28:46Z'
+      lastUpdateTime: '2020-04-16T07:51:42Z'
+      message: >-
+        ReplicaSet "mip-cfca-recognize-server-deployment-f8c979bf8" has
+        successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: 'True'
+      type: Progressing
+    - lastTransitionTime: '2020-04-16T07:53:33Z'
+      lastUpdateTime: '2020-04-16T07:53:33Z'
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: 'True'
+      type: Available
+  observedGeneration: 7
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2

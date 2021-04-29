@@ -1,0 +1,16 @@
+apiVersion: "extensions/v1beta1"
+kind: "Ingress"
+metadata:
+  labels:
+    app: "sonar"
+  namespace: "common-system"
+  name: "sonar"
+spec:
+  rules:
+    - host: "sonar.haid.com.cn"
+      http:
+        paths:
+        - backend:
+            serviceName: "sonar"
+            servicePort: 9000
+          path: "/"

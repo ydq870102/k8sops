@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    alicloud-pvname: jenkins-slave-pv
+  name: jenkins-slave-pv
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 100Gi
+  flexVolume:
+    driver: alicloud/nas
+    options:
+      modeType: non-recursive
+      path: /mip/jenkins-slave/mvn
+      server: 0541648848-ora18.cn-hangzhou.nas.aliyuncs.com
+      vers: '3'
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nas
+  volumeMode: Filesystem

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: >
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"mip-log-pvc","namespace":"mip-system"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"30Gi"}},"selector":{"matchLabels":{"alicloud-pvname":"mip-log-pv"}},"storageClassName":"nas","volumeMode":"Filesystem","volumeName":"mip-log-pv"}}
+    pv.kubernetes.io/bind-completed: 'yes'
+  creationTimestamp: '2020-04-15T09:08:39Z'
+  finalizers:
+    - kubernetes.io/pvc-protection
+  name: mip-log-pvc
+  namespace: mip-system
+  resourceVersion: '834372058'
+  selfLink: /api/v1/namespaces/mip-system/persistentvolumeclaims/mip-log-pvc
+  uid: b2732d15-7ef8-11ea-aba3-9698111c9a36
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi
+  selector:
+    matchLabels:
+      alicloud-pvname: mip-log-pv
+  storageClassName: nas
+  volumeMode: Filesystem
+  volumeName: mip-log-pv
+status:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 30Gi
+  phase: Bound

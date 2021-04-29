@@ -1,0 +1,98 @@
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mip-servercenter
+  namespace: mip-system
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: mip-servercenter
+      project: mip
+  serviceName: mip-servercenter
+  template:
+    metadata:
+      labels:
+        app: mip-servercenter
+        project: mip
+    spec:
+      containers:
+        - env:
+            - name: APP_OPTS
+              value: '--spring.profiles.active=uat,jdbc'
+          image: 'registry.haid.com.cn/mip/mip-servercenter:v1.2'
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: 30101
+            timeoutSeconds: 5
+          name: eureka
+          ports:
+            - containerPort: 30101
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: 30101
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 125Mi
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: mip-registry-secret
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 10
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mip-servercenter-svc
+  namespace: mip-system
+spec:
+  clusterIP: None
+  ports:
+    - name: eureka
+      port: 30101
+  selector:
+    project: mip
+    app: mip-servercenter
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: mip-servercenter-ingress
+  namespace: mip-system
+spec:
+  rules:
+    - host: mipqa-eureka.haid.com.cn
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: mip-servercenter-svc
+            servicePort: 30101
+  tls:
+    - hosts:
+        - mipqa-eureka.haid.com.cn
+      secretName: tls-haid.com.cn

@@ -1,0 +1,185 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: fluentd-server-config
+  namespace: elkstack
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  system.conf: |-
+    <system>
+      root_dir /tmp/fluentd-buffers/
+    </system>
+
+  system.input.conf: |-
+    # Listen to incoming data over SSL
+    <source>
+      @type forward
+      port 24224
+      bind 0.0.0.0
+    </source>
+
+  output.conf: |-
+    # Enriches records with Kubernetes metadata
+    <filter kubernetes.**>
+      @type kubernetes_metadata
+    </filter>
+    # Store Data in Elasticsearch
+    <match *.**>
+      @type copy
+      <store>
+        @id elasticsearch
+        @type elasticsearch
+        @log_level info
+        host elasticsearch-master
+        port 9200
+        logstash_format true
+        request_timeout    30s
+        slow_flush_log_threshold 30s
+        <buffer>
+          @type file
+          path /var/log/fluentd-buffers/server.buffer
+          flush_mode interval
+          flush_thread_count 12
+          flush_interval 8s
+          retry_max_interval 30
+          chunk_limit_size 32M
+          total_limit_size 20G
+          retry_wait 10s
+        </buffer>
+      </store>
+    </match>
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd-server
+  namespace: elkstack
+  labels:
+    k8s-app: fluentd-server
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fluentd-server
+  labels:
+    k8s-app: fluentd-server
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "namespaces"
+  - "pods"
+  verbs:
+  - "get"
+  - "watch"
+  - "list"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fluentd-server
+  labels:
+    k8s-app: fluentd-server
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+subjects:
+- kind: ServiceAccount
+  name: fluentd-server
+  namespace: elkstack
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: fluentd-server
+  apiGroup: ""
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluentd-server
+  namespace: elkstack
+  labels:
+    k8s-app: fluentd-server
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "Flunetd"
+spec:
+  ports:
+  - port: 24224
+    protocol: TCP
+    targetPort: server
+  selector:
+    k8s-app: fluentd-server
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluentd-server-v3.0.2
+  namespace: elkstack
+  labels:
+    k8s-app: fluentd-server
+    version: v3.0.2
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: fluentd-server
+      version: v3.0.2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        k8s-app: fluentd-server
+        kubernetes.io/cluster-service: "true"
+        version: v3.0.2
+    spec:
+      serviceAccountName: fluentd-server
+      containers:
+      - name: fluentd-server
+        image: quay.io/fluentd_elasticsearch/fluentd:v3.0.2
+        imagePullPolicy: Always
+        env:
+        - name: FLUENTD_ARGS
+          value: --no-supervisor -q
+        resources:
+          limits:
+            memory: 1024Mi
+          requests:
+            cpu: 1000m
+            memory: 200Mi
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/fluent/config.d
+        ports:
+        - containerPort: 24224
+          name: server
+          protocol: TCP
+      terminationGracePeriodSeconds: 160
+      volumes:
+      - name: config-volume
+        configMap:
+          name: fluentd-server-config
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app: fluentd-server-ingress
+  namespace: elkstack
+  name: fluentd-server-ingress
+spec:
+  rules:
+    - host: fluentd.haid.com.cn
+      http:
+        paths:
+        - backend:
+            serviceName: fluentd-server
+            servicePort: 24224
+          path: /
